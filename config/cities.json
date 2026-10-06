@@ -1,0 +1,18 @@
+{
+    "Barranquilla": {
+        "latitude": 10.9685,
+        "longitude": -74.7813
+    },
+    "Bogota": {
+        "latitude": 4.7110,
+        "longitude": -74.0721
+    },
+    "Medellin": {
+        "latitude": 6.2442,
+        "longitude": -75.5812
+    },
+    "Cali": {
+    "latitude": 3.4516,
+    "longitude": -76.5320
+}
+}
