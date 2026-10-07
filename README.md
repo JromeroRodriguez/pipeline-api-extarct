@@ -9,15 +9,12 @@ Pipeline ETL que consulta el pronostico horario de Open-Meteo para las ciudades 
 - Transforma y valida los datos meteorologicos con pandas.
 - Calcula estadisticas por ciudad: temperatura minima, maxima y promedio, humedad promedio, precipitacion total y velocidad promedio del viento.
 - Guarda los resultados en CSV y realiza UPSERT en PostgreSQL.
-- Incluye una interfaz de escritorio Tkinter para ejecutar el pipeline y ver su progreso.
 
 ## Requisitos
 
 - Python 3.11 o posterior.
 - PostgreSQL accesible desde el equipo.
 - Acceso a Internet para consultar Open-Meteo.
-
-En Linux, si Tkinter no esta disponible, instala el paquete de Tk para tu version de Python (por ejemplo, `python3-tk`).
 
 ## Instalacion
 
@@ -100,11 +97,23 @@ Activa el entorno virtual y ejecuta el pipeline desde la raiz del proyecto:
 python -m src.main
 ```
 
-Para abrir la interfaz de escritorio:
+## Interfaz web
+
+En desarrollo, inicia el servidor de la API desde la raiz del proyecto:
 
 ```bash
-python -m ui.app
+python -m src.api
 ```
+
+En otra terminal, inicia el frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abre la URL que muestra Vite (normalmente `http://localhost:5173`). Para ejecutar la interfaz compilada, ejecuta `npm run build` dentro de `frontend/` y luego inicia `python -m src.api`; quedara disponible en `http://127.0.0.1:8000`.
 
 ## Etapas del pipeline
 
