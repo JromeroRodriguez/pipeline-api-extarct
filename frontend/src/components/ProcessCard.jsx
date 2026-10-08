@@ -40,8 +40,8 @@ export default function ProcessCard({ snapshot }) {
   const roundedProgress = Math.round(progress)
 
   return (
-    <section className="panel flex min-h-[300px] flex-col justify-between p-6 animate-fade-up">
-      <div className="flex items-center justify-between">
+    <section className="panel flex h-[380px] flex-col justify-between p-5 sm:p-6 animate-fade-up">
+      <div className="flex shrink-0 items-center justify-between">
         <div>
           <h2 className="panel-title">Proceso actual</h2>
           <p className="panel-subtitle mt-0.5">Ejecución de la etapa en curso</p>
@@ -56,7 +56,7 @@ export default function ProcessCard({ snapshot }) {
         </span>
       </div>
 
-      <div className="my-8">
+      <div className="my-auto py-2">
         <p
           className={`text-xl font-semibold tracking-wide sm:text-2xl ${accentText} transition-colors duration-300`}
         >
@@ -65,7 +65,7 @@ export default function ProcessCard({ snapshot }) {
         <p className="mt-1.5 text-sm text-slate-400">{description}</p>
       </div>
 
-      <div className="mt-6">
+      <div className="shrink-0">
         <div className="flex items-end justify-between">
           <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
             Progreso

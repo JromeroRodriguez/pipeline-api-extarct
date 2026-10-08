@@ -24,8 +24,11 @@ export default function ExecutionLogs({ logs }) {
   }, [logs])
 
   return (
-    <section className="panel flex h-full flex-col p-5 sm:p-6 animate-fade-up" style={{ animationDelay: '60ms' }}>
-      <div className="flex items-center justify-between">
+    <section
+      className="panel flex h-[380px] flex-col p-5 sm:p-6 animate-fade-up"
+      style={{ animationDelay: '60ms' }}
+    >
+      <div className="flex shrink-0 items-center justify-between">
         <div>
           <h2 className="panel-title">Registros de ejecución</h2>
           <p className="panel-subtitle mt-0.5">Eventos del pipeline con marca de tiempo</p>
@@ -37,7 +40,7 @@ export default function ExecutionLogs({ logs }) {
 
       <div
         ref={scrollRef}
-        className="logs-scroll mt-5 min-h-52 flex-1 overflow-y-auto rounded-lg border border-slate-800/80 bg-black/40 p-4 font-mono text-xs leading-6"
+        className="logs-scroll mt-5 min-h-0 flex-1 overflow-y-auto rounded-lg border border-slate-800/80 bg-black/40 p-4 font-mono text-xs leading-6"
       >
         {logs.length === 0 ? (
           <p className="text-slate-600">
