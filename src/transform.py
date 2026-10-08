@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.validate import validate_weather_data
+
 
 RAW_DIRECTORY = Path("data/raw")
 
@@ -146,8 +148,10 @@ def transform():
         raw_data
     )
 
+    validate_weather_data(df)
+
     print(
-        "\nTransformación completada."
+        "\nTransformación y validación completadas."
     )
 
     print(

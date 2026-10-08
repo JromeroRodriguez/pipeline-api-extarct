@@ -118,10 +118,9 @@ Abre la URL que muestra Vite (normalmente `http://localhost:5173`). Para ejecuta
 ## Etapas del pipeline
 
 1. **Extract:** consulta Open-Meteo y guarda la respuesta original.
-2. **Transform:** convierte los datos horarios a un DataFrame.
-3. **Validate:** verifica la calidad y estructura de los registros.
-4. **Analyze:** calcula el resumen estadistico por ciudad.
-5. **Load:** escribe los CSV y actualiza las tablas PostgreSQL mediante UPSERT.
+2. **Transform:** convierte los datos horarios a un DataFrame y valida su calidad y estructura.
+3. **Analyze:** calcula el resumen estadistico por ciudad.
+4. **Load:** escribe los CSV y actualiza las tablas PostgreSQL mediante UPSERT.
 
 Los UPSERT usan `city` y `datetime` como clave para `weather_hourly`, y `city` para `weather_summary`. Por eso esas columnas deben poder identificar filas unicas; el pipeline crea los indices correspondientes si aun no existen.
 

@@ -1,13 +1,13 @@
 import ExecutionLogs from '../components/ExecutionLogs'
 import Header from '../components/Header'
 import PipelineProgress from '../components/PipelineProgress'
-import ProcessCard from '../components/ProcessCard'
+import ResultsTable from '../components/ResultsTable'
 import RunPipelineButton from '../components/RunPipelineButton'
 import { usePipeline } from '../hooks/usePipeline'
 
 export default function Dashboard() {
   const pipeline = usePipeline()
-  const { stages, logs, status, run } = pipeline
+  const { stages, logs, status, run, hasExecuted, results, resultsLoading, refreshResults } = pipeline
 
   return (
     <div className="relative min-h-screen">
@@ -20,7 +20,7 @@ export default function Dashboard() {
               <div>
                 <h2 className="panel-title">Estado del pipeline</h2>
                 <p className="panel-subtitle mt-0.5">
-                  Extracción → Transformación → Validación → Análisis → Carga
+                  Extracción → Transformación → Análisis → Carga
                 </p>
               </div>
             </div>
@@ -29,14 +29,20 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-            <ProcessCard snapshot={pipeline} />
-            <ExecutionLogs logs={logs} />
-          </div>
+          <ExecutionLogs logs={logs} />
 
           <div className="flex justify-center pt-2">
             <RunPipelineButton status={status} onRun={run} />
           </div>
+
+          {hasExecuted && (
+            <ResultsTable
+              results={results}
+              loading={resultsLoading}
+              onRefresh={refreshResults}
+              pipelineStatus={status}
+            />
+          )}
         </main>
       </div>
     </div>

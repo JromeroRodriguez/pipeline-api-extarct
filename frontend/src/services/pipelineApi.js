@@ -23,22 +23,12 @@ export const STAGES = [
   {
     key: 'transform',
     label: 'Transformación',
-    duration: 3000,
-    title: 'TRANSFORMANDO DATOS',
-    running: 'Convirtiendo las respuestas de la API en filas estructuradas...',
-    done: '1.248 registros procesados',
+    duration: 6000,
+    title: 'TRANSFORMANDO Y VALIDANDO DATOS',
+    running: 'Estructurando los datos y comprobando su integridad...',
+    done: '1.248 registros procesados y validados',
     pending: 'Esperando',
-    meta: '1.248 registros procesados',
-  },
-  {
-    key: 'validate',
-    label: 'Validación',
-    duration: 3000,
-    title: 'VALIDANDO DATOS',
-    running: 'Verificando la integridad y la estructura de los datos...',
-    done: '1.248 registros validados',
-    pending: 'Esperando',
-    meta: '98.7% de calidad de datos',
+    meta: '1.248 registros validados',
   },
   {
     key: 'analyze',
@@ -66,7 +56,6 @@ export const TOTAL_DURATION = STAGES.reduce((total, stage) => total + stage.dura
 
 const TARGET_RECORDS = 1248
 const TARGET_CITIES = 5
-const TARGET_QUALITY = 98.7
 const EXTRACT_RECORDS = 840
 
 const LOG_EVENTS = [
@@ -79,9 +68,9 @@ const LOG_EVENTS = [
   { at: 3200, level: 'INFO', message: 'Parseando columnas de fecha y ajustando tipos' },
   { at: 4950, level: 'SUCCESS', message: 'Transformación completada · 1.248 registros procesados' },
 
-  { at: 5050, level: 'INFO', message: 'Validando la integridad y la estructura de los datos' },
-  { at: 6300, level: 'WARNING', message: '3 filas sin humedad fueron imputadas' },
-  { at: 7950, level: 'SUCCESS', message: 'Validación completada · calidad de datos 98.7%' },
+  { at: 5050, level: 'INFO', message: 'Validando la calidad y la integridad de los datos' },
+  { at: 6300, level: 'INFO', message: 'Comprobando campos requeridos, nulos, tipos y rangos' },
+  { at: 7950, level: 'SUCCESS', message: 'Transformación y validación completadas · 1.248 registros válidos' },
 
   { at: 8050, level: 'INFO', message: 'Calculando estadísticas por ciudad' },
   { at: 9950, level: 'SUCCESS', message: 'Análisis completado · 5 ciudades resumidas' },
@@ -151,7 +140,6 @@ function computeStats(index, progress, elapsed) {
   const ratio = progress / 100
   let records = 0
   let cities = 0
-  let quality = null
 
   if (index >= 1) {
     records = EXTRACT_RECORDS
@@ -163,19 +151,15 @@ function computeStats(index, progress, elapsed) {
     cities = Math.round(TARGET_CITIES * ratio)
   } else if (index === 1) {
     records = Math.round(EXTRACT_RECORDS + (TARGET_RECORDS - EXTRACT_RECORDS) * ratio)
-  } else if (index === 2) {
+  } else {
     records = TARGET_RECORDS
-    quality = 92 + (TARGET_QUALITY - 92) * ratio
-  } else if (index > 2) {
-    records = TARGET_RECORDS
-    quality = TARGET_QUALITY
   }
 
   return {
     records,
     cities,
     executionTime: `${(elapsed / 1000).toFixed(1)}s`,
-    quality: quality === null ? null : Math.round(quality * 10) / 10,
+    quality: null,
   }
 }
 
@@ -287,5 +271,24 @@ export async function getPipelineStatus() {
 export async function getPipelineLogs() {
   const response = await fetch(`${API_BASE}/logs`)
   if (!response.ok) throw new Error(`No se pudieron obtener los registros (estado ${response.status})`)
+  return response.json()
+}
+
+const MOCK_RESULTS = {
+  summary: [
+    { city: 'Barranquilla', temperature_min: 22.8, temperature_max: 32.5, temperature_avg: 26.69, humidity_avg: 87.78, precipitation_total: 61.3, wind_speed_avg: 6.28 },
+    { city: 'Cali', temperature_min: 19.5, temperature_max: 28.4, temperature_avg: 22.43, humidity_avg: 86.95, precipitation_total: 78.9, wind_speed_avg: 2.05 },
+    { city: 'Medellin', temperature_min: 16.7, temperature_max: 29.3, temperature_avg: 20.7, humidity_avg: 88.92, precipitation_total: 97.1, wind_speed_avg: 2.23 },
+    { city: 'Bogota', temperature_min: 10.9, temperature_max: 21.5, temperature_avg: 15.07, humidity_avg: 84.58, precipitation_total: 67.9, wind_speed_avg: 3.19 },
+  ],
+  hourly: [],
+  totalHourly: 672,
+  updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+}
+
+export async function getPipelineResults() {
+  if (USE_MOCK) return MOCK_RESULTS
+  const response = await fetch(`${API_BASE}/results`)
+  if (!response.ok) throw new Error(`No se pudieron obtener los resultados (estado ${response.status})`)
   return response.json()
 }

@@ -5,8 +5,6 @@ from src.extract import (
 
 from src.transform import transform
 
-from src.validate import validate_weather_data
-
 from src.analyze import generate_city_summary
 
 from src.load import (
@@ -39,7 +37,7 @@ def main() -> None:
     # -----------------------------------------
     # EXTRACT
     # -----------------------------------------
-    print("\n[1/5] EXTRACT")
+    print("\n[1/4] EXTRACT")
 
     raw_data = extract_weather_data()
 
@@ -50,7 +48,7 @@ def main() -> None:
     # -----------------------------------------
     # TRANSFORM
     # -----------------------------------------
-    print("\n[2/5] TRANSFORM")
+    print("\n[2/4] TRANSFORM")
 
     df = transform()
 
@@ -59,16 +57,9 @@ def main() -> None:
     )
 
     # -----------------------------------------
-    # VALIDATE
-    # -----------------------------------------
-    print("\n[3/5] VALIDATE")
-
-    validate_weather_data(df)
-
-    # -----------------------------------------
     # ANALYZE
     # -----------------------------------------
-    print("\n[4/5] ANALYZE")
+    print("\n[3/4] ANALYZE")
 
     summary_df = generate_city_summary(
         df
@@ -82,7 +73,7 @@ def main() -> None:
     # -----------------------------------------
     # LOAD
     # -----------------------------------------
-    print("\n[5/5] LOAD")
+    print("\n[4/4] LOAD")
 
     processed_file = save_processed_data(
         df

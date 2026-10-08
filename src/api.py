@@ -1,4 +1,5 @@
 import copy
+import csv
 import json
 import mimetypes
 import os
@@ -15,6 +16,8 @@ from urllib.parse import unquote, urlsplit
 BASE_DIRECTORY = Path(__file__).resolve().parent.parent
 FRONTEND_DIRECTORY = BASE_DIRECTORY / "frontend" / "dist"
 PORT = int(os.getenv("PORT", "8000"))
+SUMMARY_CSV_PATH = BASE_DIRECTORY / "data" / "processed" / "weather_summary.csv"
+PROCESSED_CSV_PATH = BASE_DIRECTORY / "data" / "processed" / "weather_processed.csv"
 
 STAGES = [
     {
@@ -28,15 +31,8 @@ STAGES = [
         "key": "transform",
         "label": "Transformación",
         "marker": "TRANSFORM",
-        "running": "Convirtiendo los datos en registros estructurados...",
-        "done": "Datos transformados correctamente",
-    },
-    {
-        "key": "validate",
-        "label": "Validación",
-        "marker": "VALIDATE",
-        "running": "Comprobando la calidad y estructura de los datos...",
-        "done": "Datos validados correctamente",
+        "running": "Transformando los datos y comprobando su calidad...",
+        "done": "Datos transformados y validados correctamente",
     },
     {
         "key": "analyze",
@@ -120,7 +116,7 @@ def _handle_output(line):
     if not line:
         return
 
-    marker = re.match(r"\[\d+/5\]\s+(EXTRACT|TRANSFORM|VALIDATE|ANALYZE|LOAD)", line)
+    marker = re.match(r"\[\d+/4\]\s+(EXTRACT|TRANSFORM|ANALYZE|LOAD)", line)
     with STATE_LOCK:
         if marker:
             stage_index = STAGE_INDEX[marker.group(1)]
@@ -139,7 +135,7 @@ def _handle_output(line):
                 progress=0,
                 description=stage["running"],
             )
-            _add_log(f"Etapa {stage_index + 1}/5: {stage['label']}")
+            _add_log(f"Etapa {stage_index + 1}/4: {stage['label']}")
             return
 
         records = re.search(r"(?:Registros horarios|Registros procesados):\s*(\d+)", line)
@@ -203,6 +199,59 @@ def _run_pipeline():
             _add_log(STATE["errorMessage"])
 
 
+def _get_pipeline_results():
+    summary = []
+    if SUMMARY_CSV_PATH.is_file():
+        try:
+            with open(SUMMARY_CSV_PATH, mode="r", encoding="utf-8") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    summary.append({
+                        "city": row.get("city", ""),
+                        "temperature_min": float(row["temperature_min"]) if row.get("temperature_min") else None,
+                        "temperature_max": float(row["temperature_max"]) if row.get("temperature_max") else None,
+                        "temperature_avg": float(row["temperature_avg"]) if row.get("temperature_avg") else None,
+                        "humidity_avg": float(row["humidity_avg"]) if row.get("humidity_avg") else None,
+                        "precipitation_total": float(row["precipitation_total"]) if row.get("precipitation_total") else None,
+                        "wind_speed_avg": float(row["wind_speed_avg"]) if row.get("wind_speed_avg") else None,
+                    })
+        except Exception:
+            pass
+
+    hourly = []
+    total_hourly = 0
+    if PROCESSED_CSV_PATH.is_file():
+        try:
+            with open(PROCESSED_CSV_PATH, mode="r", encoding="utf-8") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    total_hourly += 1
+                    if len(hourly) < 200:
+                        hourly.append({
+                            "city": row.get("city", ""),
+                            "latitude": float(row["latitude"]) if row.get("latitude") else None,
+                            "longitude": float(row["longitude"]) if row.get("longitude") else None,
+                            "datetime": row.get("datetime", ""),
+                            "temperature_c": float(row["temperature_c"]) if row.get("temperature_c") else None,
+                            "humidity_pct": float(row["humidity_pct"]) if row.get("humidity_pct") else None,
+                            "precipitation_mm": float(row["precipitation_mm"]) if row.get("precipitation_mm") else None,
+                            "wind_speed_kmh": float(row["wind_speed_kmh"]) if row.get("wind_speed_kmh") else None,
+                        })
+        except Exception:
+            pass
+
+    updated_at = None
+    if SUMMARY_CSV_PATH.is_file():
+        updated_at = datetime.fromtimestamp(SUMMARY_CSV_PATH.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+
+    return {
+        "summary": summary,
+        "hourly": hourly,
+        "totalHourly": total_hourly,
+        "updatedAt": updated_at,
+    }
+
+
 class PipelineRequestHandler(BaseHTTPRequestHandler):
     def _send_json(self, payload, status=200):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -233,6 +282,10 @@ class PipelineRequestHandler(BaseHTTPRequestHandler):
             with STATE_LOCK:
                 entries = copy.deepcopy(STATE["logs"])
             self._send_json({"entries": entries})
+            return
+
+        if path == "/api/pipeline/results":
+            self._send_json(_get_pipeline_results())
             return
 
         self._serve_frontend(path)

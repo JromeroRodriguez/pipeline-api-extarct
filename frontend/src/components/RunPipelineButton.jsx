@@ -43,7 +43,7 @@ export default function RunPipelineButton({ status = 'idle', disabled = false, o
       <p className="text-xs text-slate-600">
         {isRunning
           ? 'El pipeline está en ejecución. Consulta el progreso arriba.'
-          : 'Extracción · Transformación · Validación · Análisis · Carga'}
+          : 'Extracción · Transformación · Análisis · Carga'}
       </p>
     </div>
   )

@@ -3,6 +3,7 @@ import {
   USE_MOCK,
   createInitialSnapshot,
   getPipelineLogs,
+  getPipelineResults,
   getPipelineStatus,
   runPipeline,
   startSimulation,
@@ -10,8 +11,23 @@ import {
 
 export function usePipeline() {
   const [snapshot, setSnapshot] = useState(() => createInitialSnapshot())
+  const [results, setResults] = useState(null)
+  const [resultsLoading, setResultsLoading] = useState(false)
+  const [hasExecuted, setHasExecuted] = useState(false)
   const simulationRef = useRef(null)
   const pollingRef = useRef(null)
+
+  const fetchResults = useCallback(async () => {
+    try {
+      setResultsLoading(true)
+      const data = await getPipelineResults()
+      setResults(data)
+    } catch (error) {
+      console.error('Error fetching pipeline results:', error)
+    } finally {
+      setResultsLoading(false)
+    }
+  }, [])
 
   const teardown = useCallback(() => {
     simulationRef.current?.cancel()
@@ -36,6 +52,10 @@ export function usePipeline() {
         if (status.status !== 'running') {
           clearInterval(pollingRef.current)
           pollingRef.current = null
+          if (status.status === 'completed') {
+            setHasExecuted(true)
+            fetchResults()
+          }
         }
       } catch (error) {
         clearInterval(pollingRef.current)
@@ -47,7 +67,7 @@ export function usePipeline() {
         }))
       }
     }, 800)
-  }, [])
+  }, [fetchResults])
 
   const run = useCallback(async () => {
     teardown()
@@ -59,7 +79,13 @@ export function usePipeline() {
 
     if (USE_MOCK) {
       simulationRef.current = startSimulation({
-        onTick: setSnapshot,
+        onTick: (next) => {
+          setSnapshot(next)
+          if (next.status === 'completed') {
+            setHasExecuted(true)
+            fetchResults()
+          }
+        },
         onError: (message) =>
           setSnapshot((previous) => ({ ...previous, status: 'error', errorMessage: message })),
       })
@@ -76,7 +102,7 @@ export function usePipeline() {
         errorMessage: error.message,
       }))
     }
-  }, [startPolling, teardown])
+  }, [fetchResults, startPolling, teardown])
 
   const reset = useCallback(() => {
     teardown()
@@ -88,6 +114,10 @@ export function usePipeline() {
   return {
     ...snapshot,
     isRunning: snapshot.status === 'running',
+    hasExecuted,
+    results,
+    resultsLoading,
+    refreshResults: fetchResults,
     run,
     reset,
   }

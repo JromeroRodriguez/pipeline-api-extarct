@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -24,9 +25,10 @@ def load_cities():
         return json.load(file)
 
 
-def fetch_weather(city_name, latitude, longitude):
+def fetch_weather(city_name, latitude, longitude, max_retries=4):
     """
-    Obtiene los datos meteorológicos de una ciudad desde Open-Meteo.
+    Obtiene los datos meteorológicos de una ciudad desde Open-Meteo con reintentos
+    y manejo de límites de tasa (429 Too Many Requests).
     """
 
     params = {
@@ -42,48 +44,66 @@ def fetch_weather(city_name, latitude, longitude):
         "timezone": "America/Bogota",
     }
 
-    try:
-        response = requests.get(
-            API_URL,
-            params=params,
-            timeout=30,
-        )
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.get(
+                API_URL,
+                params=params,
+                timeout=30,
+            )
 
-        response.raise_for_status()
+            if response.status_code == 429:
+                wait_time = attempt * 2
+                print(
+                    f"Aviso: límite de peticiones (429) para {city_name}. "
+                    f"Reintentando en {wait_time}s (intento {attempt}/{max_retries})..."
+                )
+                time.sleep(wait_time)
+                continue
 
-        return response.json()
+            response.raise_for_status()
+            return response.json()
 
-    except requests.exceptions.Timeout:
-        print(f"Error: timeout al consultar {city_name}")
-        return None
+        except requests.exceptions.Timeout:
+            if attempt == max_retries:
+                print(f"Error: timeout al consultar {city_name}")
+                return None
+            time.sleep(attempt)
 
-    except requests.exceptions.ConnectionError:
-        print(f"Error: no se pudo conectar con la API para {city_name}")
-        return None
+        except requests.exceptions.ConnectionError:
+            if attempt == max_retries:
+                print(f"Error: no se pudo conectar con la API para {city_name}")
+                return None
+            time.sleep(attempt)
 
-    except requests.exceptions.HTTPError as error:
-        print(
-            f"Error HTTP al consultar {city_name}: {error}"
-        )
-        return None
+        except requests.exceptions.HTTPError as error:
+            if attempt == max_retries:
+                print(f"Error HTTP al consultar {city_name}: {error}")
+                return None
+            time.sleep(attempt)
 
-    except requests.exceptions.RequestException as error:
-        print(
-            f"Error de conexión con {city_name}: {error}"
-        )
-        return None
+        except requests.exceptions.RequestException as error:
+            if attempt == max_retries:
+                print(f"Error de conexión con {city_name}: {error}")
+                return None
+            time.sleep(attempt)
+
+    return None
 
 
 def extract_weather_data():
     """
-    Extrae los datos de todas las ciudades configuradas.
+    Extrae los datos de todas las ciudades configuradas con pausas entre peticiones
+    para evitar límites de peticiones por ráfaga.
     """
 
     cities = load_cities()
 
     extracted_data = []
 
-    for city_name, coordinates in cities.items():
+    for index, (city_name, coordinates) in enumerate(cities.items()):
+        if index > 0:
+            time.sleep(1.2)
 
         print(f"Extrayendo datos de {city_name}...")
 
